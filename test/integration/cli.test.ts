@@ -216,6 +216,28 @@ describe("flat-file CLI", () => {
     }
   });
 
+  it("accepts each fake-data distribution", () => {
+    const fakeFile = join(directory, "distributions.json");
+    for (const distribution of ["random", "chunky", "equator", "cities"]) {
+      expect(
+        JSON.parse(
+          execFileSync(
+            process.execPath,
+            [cli, "--file", fakeFile, "--fake-data", "2", distribution],
+            { encoding: "utf8" },
+          ),
+        ),
+      ).toEqual({ added: 2 });
+    }
+    const invalid = spawnSync(
+      process.execPath,
+      [cli, "--file", fakeFile, "--fake-data", "1", "unknown"],
+      { encoding: "utf8" },
+    );
+    expect(invalid.status).not.toBe(0);
+    expect(invalid.stderr).toMatch(/Usage/);
+  });
+
   it("reports errors without overwriting the file", () => {
     const before = readFileSync(file, "utf8");
     const invalid = spawnSync(

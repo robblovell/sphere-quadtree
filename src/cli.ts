@@ -6,7 +6,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { BoundingBox } from "./BoundingBox";
-import { generateFakePoints } from "./generateFakePoints";
+import {
+  generateFakePoints,
+  type FakeDataDistribution,
+} from "./generateFakePoints";
 import { Point } from "./Point";
 import { SphereQuadtreeIndex } from "./SphereQuadtreeIndex";
 import { Square } from "./Square";
@@ -15,7 +18,7 @@ import { startVisualServer } from "./visual/startVisualServer";
 
 const usage = `Usage: sqt [--file path] [--interactive]
        sqt [--file path] --visual | --electron
-       sqt [--file path] --fake-data <count>
+       sqt [--file path] --fake-data <count> [random|chunky|equator|cities]
        sqt [--file path] add <id> <lat> <lon>
        sqt [--file path] delete <id>
        sqt [--file path] find <lat1> <lon1> <lat2> <lon2> <lat3> <lon3>
@@ -84,6 +87,7 @@ try {
   let file: string | undefined;
   let mode: "interactive" | "visual" | "electron" | "fake-data" | undefined;
   let fakeCount: number | undefined;
+  let fakeDistribution: FakeDataDistribution = "random";
   while (
     [
       "--file",
@@ -123,8 +127,15 @@ try {
   }
   const tree = new SphereQuadtreeIndex({ file });
   if (mode === "fake-data") {
-    if (args.length || fakeCount === undefined) throw new Error(usage);
-    tree.addMany(generateFakePoints(fakeCount));
+    if (
+      args.length > 1 ||
+      fakeCount === undefined ||
+      (args.length === 1 &&
+        !["random", "chunky", "equator", "cities"].includes(args[0]))
+    )
+      throw new Error(usage);
+    if (args.length === 1) fakeDistribution = args[0] as FakeDataDistribution;
+    tree.addMany(generateFakePoints(fakeCount, Math.random, fakeDistribution));
     console.log(JSON.stringify({ added: fakeCount }));
   } else if (mode === "visual") {
     if (args.length) throw new Error(usage);

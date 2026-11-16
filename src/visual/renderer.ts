@@ -265,7 +265,7 @@ function draw(): void {
     );
     scene.add(selectedMesh);
   }
-  const markerGeometry = new THREE.SphereGeometry(0.0035, 8, 6);
+  const markerGeometry = new THREE.SphereGeometry(0.00175, 8, 6);
   const markerMaterial = new THREE.MeshBasicMaterial({ color: "#ffffff" });
   markers = new THREE.InstancedMesh(
     markerGeometry,

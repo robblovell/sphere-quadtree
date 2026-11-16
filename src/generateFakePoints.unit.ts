@@ -37,4 +37,31 @@ describe("generateFakePoints", () => {
       );
     }
   });
+
+  it("supports equatorial, chunky, and city-centered distributions", () => {
+    let seed = 987654;
+    const random = (): number => {
+      seed = (1664525 * seed + 1013904223) >>> 0;
+      return seed / 0x100000000;
+    };
+    const equator = Array.from(generateFakePoints(2_000, random, "equator"));
+    expect(
+      equator.filter((point) => Math.abs(point.lat) <= 30).length,
+    ).toBeGreaterThan(1_700);
+
+    seed = 987654;
+    const chunky = Array.from(generateFakePoints(2_000, random, "chunky"));
+    expect(
+      new Set(chunky.map((point) => Math.round(point.lat))).size,
+    ).toBeLessThan(130);
+
+    seed = 987654;
+    const cities = Array.from(generateFakePoints(2_000, random, "cities"));
+    expect(
+      cities.filter((point) => Math.abs(point.lat) <= 60).length,
+    ).toBeGreaterThan(1_700);
+    expect(() =>
+      Array.from(generateFakePoints(1, random, "invalid" as never)),
+    ).toThrow(/Unknown fake data distribution/);
+  });
 });

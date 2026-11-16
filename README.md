@@ -27,16 +27,26 @@ sqt delete home
 
 For test data, `sqt --fake-data 100000` adds 100,000 randomly distributed
 points to the default index. Use `sqt --file places.json --fake-data 100000` to
-choose another index. The count must be a non-negative safe integer. Points are
-uniformly distributed over the sphere (including oceans), use unique `fake-`
-IDs, and are appended without removing existing records. The index is loaded
-and saved once for the whole batch; a count of zero does not write the file.
+choose another index. An optional distribution can be selected with `random`
+(the default), `chunky` (random dense clusters), `equator` (mostly near the
+equator), or `cities` (clusters around 100 major world cities), for example
+`sqt --fake-data 100000 cities`. The count must be a non-negative safe integer.
+Points use unique `fake-` IDs and are appended without removing existing
+records. The index is loaded and saved once for the whole batch; a count of
+zero does not write the file.
+
+```bash
+sqt --fake-data 100000 random    # default
+sqt --fake-data 100000 chunky    # random dense clusters
+sqt --fake-data 100000 equator   # concentrated around the equator
+sqt --fake-data 100000 cities    # clustered around 100 major cities
+```
 
 Searches can use three latitude/longitude pairs for a triangle, four pairs for a great-circle quadrilateral, or latitude/longitude bounds:
 
 ```sh
 sqt find square 40 -130 40 -110 60 -110 60 -130
- ```
+```
 
 The box arguments are `south west north east`; a west longitude greater than east crosses the antimeridian. The optional `--file` precedes the command and defaults to `spherequadtree.json`.
 
