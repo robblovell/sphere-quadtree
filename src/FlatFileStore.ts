@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 
 import { SphereQuadtree } from "./SphereQuadtree";
-import type { TreeData } from "./SphereQuadtree";
+import type { LegacyTreeData, TreeData } from "./SphereQuadtree";
 
 export class FlatFileStore {
   constructor(readonly path: string) {}
@@ -16,7 +16,9 @@ export class FlatFileStore {
         return new SphereQuadtree();
       throw error;
     }
-    return SphereQuadtree.fromJSON(JSON.parse(contents) as TreeData);
+    return SphereQuadtree.fromJSON(
+      JSON.parse(contents) as TreeData | LegacyTreeData,
+    );
   }
 
   save(tree: SphereQuadtree): void {

@@ -1,19 +1,29 @@
 import { icosahedron } from "./icosahedron";
 import { BoundingBox } from "./BoundingBox";
+import { latLonToVector } from "./latLonToVector";
 import { Point } from "./Point";
 import type { Square } from "./Square";
 import { Triangle } from "./Triangle";
 import type { TriangleData } from "./Triangle";
 
-type BinData = {
-  children?: BinData[];
-  points?: Array<{ id: string; lat: number; lon: number }>;
+type StoredPoint = { id: string; latE8: number; lonE8: number };
+type LegacyPoint = { id: string; lat: number; lon: number };
+
+type BinData<P> = {
+  children?: BinData<P>[];
+  points?: P[];
   triangle: TriangleData;
 };
 
 export type TreeData = {
   capacity: number;
-  roots: BinData[];
+  roots: BinData<StoredPoint>[];
+  version: 2;
+};
+
+export type LegacyTreeData = {
+  capacity: number;
+  roots: BinData<LegacyPoint>[];
   version: 1;
 };
 
@@ -33,21 +43,28 @@ export class SphereQuadtree {
 
   constructor(
     readonly capacity = 32,
-    data?: TreeData,
+    data?: TreeData | LegacyTreeData,
   ) {
     if (!Number.isSafeInteger(capacity) || capacity < 1) {
       throw new Error("Capacity must be a positive safe integer");
     }
     if (data) {
       if (
-        data.version !== 1 ||
+        (data.version !== 1 && data.version !== 2) ||
         data.capacity !== capacity ||
         !Array.isArray(data.roots) ||
         data.roots.length !== 20
       ) {
         throw new Error("Invalid or unsupported quadtree file");
       }
-      this.roots = data.roots.map((root) => this.deserialize(root, 0));
+      const migrated: Point[] = [];
+      this.roots = data.roots.map((root) =>
+        this.deserialize(root, 0, data.version, migrated),
+      );
+      if (data.version === 1) {
+        this.locations.clear();
+        for (const point of migrated) this.insert(this.roots, point, 0);
+      }
     } else {
       this.roots = icosahedron().map((triangle) => ({
         children: triangle
@@ -120,24 +137,33 @@ export class SphereQuadtree {
   }
 
   toJSON(): TreeData {
-    const serialize = (bin: Bin): BinData =>
+    const serialize = (bin: Bin): BinData<StoredPoint> =>
       bin.children
         ? {
             children: bin.children.map(serialize),
             triangle: bin.triangle.toJSON(),
           }
         : {
-            points: bin.points.map((point) => point.toJSON()),
+            points: bin.points.map((point) => ({
+              id: point.id,
+              latE8: point.latE8,
+              lonE8: point.lonE8,
+            })),
             triangle: bin.triangle.toJSON(),
           };
     return {
       capacity: this.capacity,
       roots: this.roots.map(serialize),
-      version: 1,
+      version: 2,
     };
   }
 
-  private deserialize(raw: BinData, depth: number): Bin {
+  private deserialize(
+    raw: BinData<StoredPoint | LegacyPoint>,
+    depth: number,
+    version: 1 | 2,
+    migrated: Point[],
+  ): Bin {
     if (!raw || typeof raw !== "object" || depth > MAX_DEPTH)
       throw new Error("Invalid bin");
     const bin: Bin = { points: [], triangle: Triangle.fromJSON(raw.triangle) };
@@ -151,7 +177,7 @@ export class SphereQuadtree {
         throw new Error("Invalid bin children");
       }
       bin.children = raw.children.map((child) =>
-        this.deserialize(child, depth + 1),
+        this.deserialize(child, depth + 1, version, migrated),
       );
       if (
         !bin.children.every((child) =>
@@ -167,21 +193,38 @@ export class SphereQuadtree {
       for (const rawPoint of raw.points) {
         if (!rawPoint || typeof rawPoint !== "object")
           throw new Error("Invalid point");
-        const point = new Point(rawPoint.id, rawPoint.lat, rawPoint.lon);
+        let point: Point;
+        if (version === 1 && "lat" in rawPoint && "lon" in rawPoint) {
+          point = new Point(rawPoint.id, rawPoint.lat, rawPoint.lon);
+          if (
+            !bin.triangle.contains(latLonToVector(rawPoint.lat, rawPoint.lon))
+          ) {
+            throw new Error("Persisted point is outside its bin");
+          }
+        } else if (
+          version === 2 &&
+          "latE8" in rawPoint &&
+          "lonE8" in rawPoint
+        ) {
+          point = Point.fromScaled(rawPoint.id, rawPoint.latE8, rawPoint.lonE8);
+        } else {
+          throw new Error("Invalid persisted point coordinates");
+        }
         if (
-          !bin.triangle.contains(point.vector) ||
+          (version === 2 && !bin.triangle.contains(point.vector)) ||
           this.locations.has(point.id)
         ) {
           throw new Error("Invalid or duplicate persisted point");
         }
-        bin.points.push(point);
         this.locations.set(point.id, bin);
+        if (version === 1) migrated.push(point);
+        else bin.points.push(point);
       }
     }
     return bin;
   }
 
-  static fromJSON(data: TreeData): SphereQuadtree {
+  static fromJSON(data: TreeData | LegacyTreeData): SphereQuadtree {
     if (!data || typeof data !== "object")
       throw new Error("Invalid or unsupported quadtree file");
     return new SphereQuadtree(data.capacity, data);

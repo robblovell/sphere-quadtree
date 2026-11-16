@@ -135,6 +135,32 @@ describe("flat-file CLI", () => {
     expect(JSON.parse(result)).toEqual([{ id: "default", lat: 12, lon: 34 }]);
   });
 
+  it("returns rounded coordinates in separate CLI processes", () => {
+    const point = JSON.parse(
+      run("add", "precise", "49.2827123456", "-123.120712346"),
+    );
+    expect(point).toEqual({
+      id: "precise",
+      lat: 49.28271235,
+      lon: -123.12071235,
+    });
+    expect(
+      JSON.parse(
+        run(
+          "find",
+          "box",
+          "49.28271235",
+          "-123.12071235",
+          "49.28271235",
+          "-123.12071235",
+        ),
+      ),
+    ).toEqual([point]);
+    expect(JSON.parse(run("delete", "precise"))).toEqual({
+      deleted: "precise",
+    });
+  });
+
   it("reports errors without overwriting the file", () => {
     const before = readFileSync(file, "utf8");
     const invalid = spawnSync(

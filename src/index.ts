@@ -2,7 +2,7 @@ export { BoundingBox } from "./BoundingBox";
 export { FlatFileStore } from "./FlatFileStore";
 export { Point } from "./Point";
 export { SphereQuadtree } from "./SphereQuadtree";
-export type { SearchRegion, TreeData } from "./SphereQuadtree";
+export type { LegacyTreeData, SearchRegion, TreeData } from "./SphereQuadtree";
 export { SphereQuadtreeIndex } from "./SphereQuadtreeIndex";
 export type {
   IndexStore,

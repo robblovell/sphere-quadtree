@@ -88,24 +88,34 @@ The index is loaded into memory and the whole file is rewritten on save via a te
 
 ## Precision
 
+Point coordinates are rounded on construction to eight decimal places, using
+JavaScript's `Math.round` (ties toward positive infinity). Public coordinates
+and CLI output remain in degrees. The cached vector and all searches use the
+rounded coordinates, so a point can move by up to half of `0.00000001` degree
+per axis and a search boundary can classify it differently.
+
+The JSON index uses format version 2 and stores coordinates as signed integer
+`latE8` and `lonE8` fields in units of `10^-8` degrees. These values are safe
+JavaScript integers but require more than 32 signed bits. Version 1 files with
+degree-valued `lat` and `lon` fields are read and their points are rounded and
+reassigned to bins; they are written in version 2 on the next successful
+mutation or explicit save. No binary format is implemented yet.
 
 To get within 1 meter, you need 5 decimal places, and to get within 1 centimeter, you need 7 decimal places. These values reflect precision at the equator, where one degree of latitude or longitude covers roughly 111.1 kilometers.
 
-Decimal Precision Reference
+### Decimal Precision Reference
 
+Decimal Places Precision at Equator Common Use Case
+1 ~11.1 km Large city or region
+2 ~1.11 km Town or neighborhood
+3 ~111 m Large sports field or campus
+4 ~11.1 m Individual building or street
+5 ~1.11 m Trees, cars, or specific doorways
+6 ~11.1 cm Standard commercial GPS limit
+7 ~1.11 cm Surveying and precision mapping
+8 ~1.11 mm Tectonic plate movement tracking
 
-Decimal Places	Precision at Equator	Common Use Case
-1	~11.1 km	Large city or region
-2	~1.11 km	Town or neighborhood
-3	~111 m	Large sports field or campus
-4	~11.1 m	Individual building or street
-5	~1.11 m	Trees, cars, or specific doorways
-6	~11.1 cm	Standard commercial GPS limit
-7	~1.11 cm	Surveying and precision mapping
-8	~1.11 mm	Tectonic plate movement tracking
+### Key Things to Keep in Mind
 
-
-Key Things to Keep in Mind
-
-• Longitude shrinks near the poles. Latitude spacing stays nearly constant everywhere on Earth, while lines of longitude get closer together as you move away from the equator. At 45° latitude (such as the northern US or central Europe), east-west precision is roughly 30% tighter than the numbers in the table.
-• Sub-meter accuracy requires specialized hardware. Standard smartphone GPS receivers typically only achieve an accuracy of 3 to 5 meters, even if they output coordinates with 7 or 8 decimal places. Reaching true centimeter-level accuracy requires Real-Time Kinematic (RTK) positioning or survey-grade equipment.
+- Longitude shrinks near the poles. Latitude spacing stays nearly constant everywhere on Earth, while lines of longitude get closer together as you move away from the equator. At 45° latitude (such as the northern US or central Europe), east-west precision is roughly 30% tighter than the numbers in the table.
+- Sub-meter accuracy requires specialized hardware. Standard smartphone GPS receivers typically only achieve an accuracy of 3 to 5 meters, even if they output coordinates with 7 or 8 decimal places. Reaching true centimeter-level accuracy requires Real-Time Kinematic (RTK) positioning or survey-grade equipment.
