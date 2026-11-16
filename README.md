@@ -4,7 +4,7 @@ A TypeScript reference implementation of a point index on a unit sphere. A polar
 
 ## Setup
 
-Requires Node.js 20 and npm.
+Requires Node.js 24 or later and npm. With nvm, run `nvm install` and `nvm use` to select the version in `.nvmrc`.
 
 ```sh
 npm install

@@ -119,3 +119,8 @@ Grouping these 12 vertices into the **20 equilateral faces** gives three distinc
 * **Fast Latitude Pre-Filter:** Because the rings sit strictly at $\pm 26.565^\circ$, you can instantly skip checking 15 of the 20 triangles just by checking the latitude of your target ray $\mathbf{d}$ (e.g., if $\text{lat}(\mathbf{d}) > 26.565^\circ$, it can only be inside **T1–T5**).
 
 > *Would you like this dataset formatted as a GeoJSON / JSON / CSV file, or would you like to see the 3D unit vector coordinates for each of these 12 vertices?*
+
+## interfaces
+
+Can you create a browser based interface to the sphere quadtree index that is started with sqt --visual? It would start up an electron window and allow you to add, delete, and find points in the sphere quadtree index. The interface should display a 3D visualization of the sphere quadtree as part of the interface. It would update as you make actions on the sqt. You should be able to rotate it and zoom in and out. The interface should also allow you to select a triangle on the sphere and see all the points that are contained within that triangle.
+In addition to the browser based interface, it can also run as an electron app that can be started with sqt --electron. The electron app should have the same functionality as the browser based interface, but it should also allow you to save and load sphere quadtree indexes from disk.
