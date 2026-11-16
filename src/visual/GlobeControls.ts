@@ -22,7 +22,7 @@ export class GlobeControls {
       if (!this.last) return;
       this.theta -= (event.clientX - this.last[0]) * 0.006;
       this.phi = MathUtils.clamp(
-        this.phi + (event.clientY - this.last[1]) * 0.006,
+        this.phi - (event.clientY - this.last[1]) * 0.006,
         0.01,
         Math.PI - 0.01,
       );
