@@ -115,7 +115,7 @@ async function loadCoastlines(): Promise<void> {
   );
   const coastline = new THREE.LineSegments(
     geometry,
-    new THREE.LineBasicMaterial({ color: "#d9e8a4", depthWrite: false }),
+    new THREE.LineBasicMaterial({ color: "#39ff14", depthWrite: false }),
   );
   coastline.renderOrder = 1;
   coastline.visible = coastlineToggle.checked;
