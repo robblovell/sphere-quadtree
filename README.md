@@ -35,6 +35,20 @@ Points use unique `fake-` IDs and are appended without removing existing
 records. The index is loaded and saved once for the whole batch; a count of
 zero does not write the file.
 
+Binary file persistence is the default and uses `spherequadtree.bin`. Select
+JSON persistence explicitly with `--persistence file json`; use
+`--persistence file binary` to select binary persistence explicitly. A custom
+path can be supplied with `--file`, for example:
+
+```sh
+sqt --persistence file json --file places.json add home 49.2827 -123.1207
+```
+
+The API accepts the same selectors with
+`new SphereQuadtreeIndex({ persistence: "file binary" })` or
+`new SphereQuadtreeIndex({ persistence: "file json" })`. Custom stores can
+still be supplied with the `store` option for future database backends.
+
 ```bash
 sqt --fake-data 100000 random    # default
 sqt --fake-data 100000 chunky    # random dense clusters

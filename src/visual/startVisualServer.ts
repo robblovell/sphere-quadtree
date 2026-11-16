@@ -5,6 +5,7 @@ import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import { join } from "node:path";
 
 import { VisualIndex } from "./VisualIndex";
+import type { Persistence } from "../SphereQuadtreeIndex";
 
 export type VisualServer = {
   close(): Promise<void>;
@@ -36,8 +37,15 @@ async function readJson(
 export async function startVisualServer(
   file: string | undefined,
   assets: string,
+  persistence: Persistence = "file binary",
 ): Promise<VisualServer> {
-  const index = new VisualIndex(file);
+  const index = new VisualIndex(
+    file ??
+      (persistence === "file binary"
+        ? "spherequadtree.bin"
+        : "spherequadtree.json"),
+    persistence,
+  );
   const token = randomBytes(32).toString("hex");
   let host = "";
   const json = (

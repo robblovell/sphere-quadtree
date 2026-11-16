@@ -1,3 +1,4 @@
+import { BinaryFileStore } from "./BinaryFileStore";
 import { FlatFileStore } from "./FlatFileStore";
 import type { Point } from "./Point";
 import type { SearchRegion } from "./SphereQuadtree";
@@ -8,8 +9,11 @@ export type IndexStore = {
   save(tree: SphereQuadtree): void;
 };
 
+export type Persistence = "file binary" | "file json";
+
 export type SphereQuadtreeIndexOptions = {
   file?: string;
+  persistence?: Persistence;
   store?: IndexStore;
 };
 
@@ -17,11 +21,25 @@ export class SphereQuadtreeIndex {
   private readonly store: IndexStore;
 
   constructor(options: SphereQuadtreeIndexOptions = {}) {
-    if (options.file !== undefined && options.store !== undefined) {
-      throw new Error("Specify either file or store, not both");
+    if (
+      options.store !== undefined &&
+      (options.file !== undefined || options.persistence !== undefined)
+    )
+      throw new Error("Specify either store or file persistence");
+    if (options.store) {
+      this.store = options.store;
+      return;
     }
+    const persistence = options.persistence ?? "file binary";
+    const file =
+      options.file ??
+      (persistence === "file binary"
+        ? "spherequadtree.bin"
+        : "spherequadtree.json");
     this.store =
-      options.store ?? new FlatFileStore(options.file ?? "spherequadtree.json");
+      persistence === "file binary"
+        ? new BinaryFileStore(file)
+        : new FlatFileStore(file);
   }
 
   add(point: Point): void {

@@ -13,9 +13,11 @@ describe("flat-file CLI", () => {
   const api = join(directory, "index.mjs");
   const file = join(directory, "index.json");
   const run = (...args: string[]): string =>
-    execFileSync(process.execPath, [cli, "--file", file, ...args], {
-      encoding: "utf8",
-    }).trim();
+    execFileSync(
+      process.execPath,
+      [cli, "--file", file, "--persistence", "file", "json", ...args],
+      { encoding: "utf8" },
+    ).trim();
 
   beforeAll(() => {
     buildSync({
@@ -80,7 +82,7 @@ describe("flat-file CLI", () => {
   it("runs an interactive session, continues after errors, and stops at quit", () => {
     const result = spawnSync(
       process.execPath,
-      [cli, "--interactive", "--file", file],
+      [cli, "--interactive", "--file", file, "--persistence", "file", "json"],
       {
         encoding: "utf8",
         input: [

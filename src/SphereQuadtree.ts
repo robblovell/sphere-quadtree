@@ -35,7 +35,7 @@ type Bin = {
   triangle: Triangle;
 };
 
-const MAX_DEPTH = 20;
+const MAX_DEPTH = 42;
 
 export class SphereQuadtree {
   private readonly locations = new Map<string, Bin>();

@@ -1,12 +1,14 @@
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
 
+import { BinaryFileStore } from "../BinaryFileStore";
 import { BoundingBox } from "../BoundingBox";
 import { FlatFileStore } from "../FlatFileStore";
 import { Point } from "../Point";
 import type { SearchRegion, TreeData } from "../SphereQuadtree";
 import { Square } from "../Square";
 import { Triangle } from "../Triangle";
+import type { IndexStore, Persistence } from "../SphereQuadtreeIndex";
 import type { Vector } from "../vector";
 
 export type VisualBin = {
@@ -30,10 +32,19 @@ export type VisualState = {
 type Bin = TreeData["roots"][number];
 
 export class VisualIndex {
-  constructor(private file = "spherequadtree.json") {}
+  constructor(
+    private file = "spherequadtree.bin",
+    private readonly persistence: Persistence = "file binary",
+  ) {}
+
+  private store(): IndexStore {
+    return this.persistence === "file binary"
+      ? new BinaryFileStore(this.file)
+      : new FlatFileStore(this.file);
+  }
 
   state(): VisualState {
-    const data = new FlatFileStore(this.file).load().toJSON();
+    const data = this.store().load().toJSON();
     const bins: VisualBin[] = [];
     const points: VisualPoint[] = [];
     const visit = (bin: Bin, id: string): void => {
@@ -58,21 +69,21 @@ export class VisualIndex {
   }
 
   add(id: string, lat: number, lon: number): void {
-    const store = new FlatFileStore(this.file);
+    const store = this.store();
     const tree = store.load();
     tree.add(new Point(id, lat, lon));
     store.save(tree);
   }
 
   delete(id: string): void {
-    const store = new FlatFileStore(this.file);
+    const store = this.store();
     const tree = store.load();
     if (!tree.delete(id)) throw new Error(`Point id not found: ${id}`);
     store.save(tree);
   }
 
   find(kind: string, values: number[], binId?: string): VisualPoint[] {
-    const tree = new FlatFileStore(this.file).load();
+    const tree = this.store().load();
     let region: SearchRegion;
     if (kind === "bin") {
       if (!binId || !/^(?:[0-9]|1[0-9])(?:\.[0-3])+$/.test(binId)) {
@@ -107,13 +118,21 @@ export class VisualIndex {
 
   open(file: string): void {
     if (!statSync(file).isFile()) throw new Error("Index path must be a file");
-    new FlatFileStore(file).load();
+    const store =
+      this.persistence === "file binary"
+        ? new BinaryFileStore(file)
+        : new FlatFileStore(file);
+    store.load();
     this.file = file;
   }
 
   saveAs(file: string): void {
-    const tree = new FlatFileStore(this.file).load();
-    new FlatFileStore(file).save(tree);
+    const tree = this.store().load();
+    const destination =
+      this.persistence === "file binary"
+        ? new BinaryFileStore(file)
+        : new FlatFileStore(file);
+    destination.save(tree);
     this.file = file;
   }
 }

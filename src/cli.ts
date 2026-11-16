@@ -12,18 +12,19 @@ import {
 } from "./generateFakePoints";
 import { Point } from "./Point";
 import { SphereQuadtreeIndex } from "./SphereQuadtreeIndex";
+import type { Persistence } from "./SphereQuadtreeIndex";
 import { Square } from "./Square";
 import { Triangle } from "./Triangle";
 import { startVisualServer } from "./visual/startVisualServer";
 
-const usage = `Usage: sqt [--file path] [--interactive]
-       sqt [--file path] --visual | --electron
-       sqt [--file path] --fake-data <count> [random|chunky|equator|cities]
-       sqt [--file path] add <id> <lat> <lon>
-       sqt [--file path] delete <id>
-       sqt [--file path] find <lat1> <lon1> <lat2> <lon2> <lat3> <lon3>
-       sqt [--file path] find square <lat1> <lon1> <lat2> <lon2> <lat3> <lon3> <lat4> <lon4>
-       sqt [--file path] find box <south> <west> <north> <east>`;
+const usage = `Usage: sqt [--file path] [--persistence file binary|json] [--interactive]
+       sqt [--file path] [--persistence file binary|json] --visual | --electron
+       sqt [--file path] [--persistence file binary|json] --fake-data <count> [random|chunky|equator|cities]
+       sqt [--file path] [--persistence file binary|json] add <id> <lat> <lon>
+       sqt [--file path] [--persistence file binary|json] delete <id>
+       sqt [--file path] [--persistence file binary|json] find <lat1> <lon1> <lat2> <lon2> <lat3> <lon3>
+       sqt [--file path] [--persistence file binary|json] find square <lat1> <lon1> <lat2> <lon2> <lat3> <lon3> <lat4> <lon4>
+       sqt [--file path] [--persistence file binary|json] find box <south> <west> <north> <east>`;
 
 const coordinate = (value: string): number => {
   if (value.trim() === "" || !Number.isFinite(Number(value)))
@@ -85,12 +86,14 @@ const execute = (tree: SphereQuadtreeIndex, args: string[]): void => {
 try {
   const args = process.argv.slice(2);
   let file: string | undefined;
+  let persistence: Persistence = "file binary";
   let mode: "interactive" | "visual" | "electron" | "fake-data" | undefined;
   let fakeCount: number | undefined;
   let fakeDistribution: FakeDataDistribution = "random";
   while (
     [
       "--file",
+      "--persistence",
       "--interactive",
       "--visual",
       "--electron",
@@ -102,6 +105,13 @@ try {
       if (file !== undefined || !args[0] || args[0].startsWith("--"))
         throw new Error(usage);
       file = args.shift();
+    } else if (option === "--persistence") {
+      if (
+        args.shift() !== "file" ||
+        !["binary", "json"].includes(args[0] ?? "")
+      )
+        throw new Error(usage);
+      persistence = `file ${args.shift()}` as Persistence;
     } else {
       if (mode) throw new Error(usage);
       if (option === "--fake-data") {
@@ -125,7 +135,7 @@ try {
       }
     }
   }
-  const tree = new SphereQuadtreeIndex({ file });
+  const tree = new SphereQuadtreeIndex({ file, persistence });
   if (mode === "fake-data") {
     if (
       args.length > 1 ||
@@ -140,7 +150,7 @@ try {
   } else if (mode === "visual") {
     if (args.length) throw new Error(usage);
     const assets = join(dirname(fileURLToPath(import.meta.url)), "visual");
-    const visual = await startVisualServer(file, assets);
+    const visual = await startVisualServer(file, assets, persistence);
     console.log(`Visual interface: ${visual.url}`);
     const command =
       process.platform === "darwin"
@@ -170,7 +180,13 @@ try {
     const main = join(dirname(fileURLToPath(import.meta.url)), "electron.js");
     const child = spawn(
       executable,
-      [main, ...(file === undefined ? [] : ["--file", file])],
+      [
+        main,
+        ...(file === undefined ? [] : ["--file", file]),
+        "--persistence",
+        "file",
+        persistence === "file binary" ? "binary" : "json",
+      ],
       { stdio: "inherit" },
     );
     child.on("error", (error) => {

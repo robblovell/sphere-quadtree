@@ -210,6 +210,9 @@ describe("visual interface", () => {
         join(realpathSync(location), "electron.js"),
         "--file",
         file,
+        "--persistence",
+        "file",
+        "binary",
       ]);
     },
   );

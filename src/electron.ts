@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 
+import type { Persistence } from "./SphereQuadtreeIndex";
 import { startVisualServer } from "./visual/startVisualServer";
 
 const entry = fileURLToPath(import.meta.url);
@@ -10,16 +11,34 @@ const directory = dirname(entry);
 const entryIndex = process.argv.indexOf(entry);
 if (entryIndex < 0) throw new Error("Unable to identify Electron entry point");
 const args = process.argv.slice(entryIndex + 1);
-const file = args[0] === "--file" ? args[1] : undefined;
-if (args.length && (args[0] !== "--file" || args.length !== 2 || !file)) {
-  throw new Error("Usage: electron.js [--file path]");
+let file: string | undefined;
+let persistence: Persistence = "file binary";
+while (args.length) {
+  const option = args.shift();
+  if (option === "--file" && file === undefined && args[0]) {
+    file = args.shift();
+  } else if (
+    option === "--persistence" &&
+    args.shift() === "file" &&
+    (args[0] === "binary" || args[0] === "json")
+  ) {
+    persistence = `file ${args.shift()}` as Persistence;
+  } else {
+    throw new Error(
+      "Usage: electron.js [--file path] [--persistence file binary|json]",
+    );
+  }
 }
 
 app.on("window-all-closed", () => app.quit());
 void app
   .whenReady()
   .then(async () => {
-    const visual = await startVisualServer(file, join(directory, "visual"));
+    const visual = await startVisualServer(
+      file,
+      join(directory, "visual"),
+      persistence,
+    );
     app.on("before-quit", () => {
       void visual.close().catch((error: unknown) => {
         console.error(error instanceof Error ? error.message : String(error));
@@ -55,7 +74,12 @@ void app
     ipcMain.handle("sqt:open", async (event) => {
       verifySender(event);
       const result = await dialog.showOpenDialog(window, {
-        filters: [{ extensions: ["json"], name: "Quadtree index" }],
+        filters: [
+          {
+            extensions: [persistence === "file binary" ? "bin" : "json"],
+            name: "Quadtree index",
+          },
+        ],
         properties: ["openFile"],
       });
       if (result.canceled || !result.filePaths[0]) return false;
@@ -65,7 +89,12 @@ void app
     ipcMain.handle("sqt:save-as", async (event) => {
       verifySender(event);
       const result = await dialog.showSaveDialog(window, {
-        filters: [{ extensions: ["json"], name: "Quadtree index" }],
+        filters: [
+          {
+            extensions: [persistence === "file binary" ? "bin" : "json"],
+            name: "Quadtree index",
+          },
+        ],
       });
       if (result.canceled || !result.filePath) return false;
       visual.index.saveAs(result.filePath);
