@@ -1,0 +1,169 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #101923;
+  color: #e8f1f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #304150;
+}
+h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+h2 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+}
+header p,
+.help {
+  color: #a7bbc9;
+  font-size: 0.85rem;
+  margin: 0.35rem 0;
+  overflow-wrap: anywhere;
+}
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  min-height: calc(100vh - 80px);
+}
+.globe-panel {
+  position: relative;
+  min-height: 500px;
+}
+#globe {
+  position: absolute;
+  inset: 0;
+}
+#globe canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.hint {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 1rem;
+  pointer-events: none;
+  color: #b6c8d6;
+  font-size: 0.85rem;
+}
+aside {
+  padding: 1rem;
+  border-left: 1px solid #304150;
+  overflow: auto;
+  max-height: calc(100vh - 80px);
+}
+aside section {
+  margin-bottom: 1.5rem;
+}
+form,
+label {
+  display: grid;
+  gap: 0.4rem;
+}
+.overlay-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.overlay-toggle input {
+  width: auto;
+}
+form {
+  gap: 0.75rem;
+}
+label {
+  font-size: 0.85rem;
+  color: #b6c8d6;
+}
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+.row > * {
+  min-width: 0;
+  flex: 1;
+}
+input,
+select,
+button {
+  font: inherit;
+  border: 1px solid #42596b;
+  border-radius: 5px;
+  background: #1b2b38;
+  color: #f0f7fb;
+  padding: 0.5rem;
+  width: 100%;
+}
+button {
+  cursor: pointer;
+  background: #225d72;
+}
+button:hover {
+  background: #30778e;
+}
+#desktop-actions {
+  gap: 0.5rem;
+}
+#desktop-actions:not([hidden]) {
+  display: flex;
+}
+#desktop-actions button {
+  white-space: nowrap;
+}
+#status:empty {
+  display: none;
+}
+#status {
+  padding: 0.6rem;
+  color: #ffe4a3;
+  background: #473b27;
+  border-radius: 5px;
+  overflow-wrap: anywhere;
+}
+ul {
+  padding: 0;
+  list-style: none;
+}
+li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid #304150;
+}
+li span {
+  flex: 1;
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
+li button {
+  width: auto;
+  font-size: 0.8rem;
+}
+@media (max-width: 800px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+  .globe-panel {
+    min-height: 55vh;
+  }
+  aside {
+    max-height: none;
+    border-left: none;
+    border-top: 1px solid #304150;
+  }
+}

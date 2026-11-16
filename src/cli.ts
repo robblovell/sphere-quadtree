@@ -1,13 +1,19 @@
 #!/usr/bin/env node
 import { createInterface } from "node:readline";
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { BoundingBox } from "./BoundingBox";
 import { Point } from "./Point";
 import { SphereQuadtreeIndex } from "./SphereQuadtreeIndex";
 import { Square } from "./Square";
 import { Triangle } from "./Triangle";
+import { startVisualServer } from "./visual/startVisualServer";
 
 const usage = `Usage: sqt [--file path] [--interactive]
+       sqt [--file path] --visual | --electron
        sqt [--file path] add <id> <lat> <lon>
        sqt [--file path] delete <id>
        sqt [--file path] find <lat1> <lon1> <lat2> <lon2> <lat3> <lon3>
@@ -74,19 +80,75 @@ const execute = (tree: SphereQuadtreeIndex, args: string[]): void => {
 try {
   const args = process.argv.slice(2);
   let file: string | undefined;
-  let interactive = false;
-  while (args[0] === "--file" || args[0] === "--interactive") {
-    if (args.shift() === "--file") {
+  let mode: "interactive" | "visual" | "electron" | undefined;
+  while (
+    ["--file", "--interactive", "--visual", "--electron"].includes(args[0])
+  ) {
+    const option = args.shift();
+    if (option === "--file") {
       if (file !== undefined || !args[0] || args[0].startsWith("--"))
         throw new Error(usage);
       file = args.shift();
     } else {
-      if (interactive) throw new Error(usage);
-      interactive = true;
+      if (mode) throw new Error(usage);
+      mode =
+        option === "--interactive"
+          ? "interactive"
+          : option === "--visual"
+            ? "visual"
+            : "electron";
     }
   }
   const tree = new SphereQuadtreeIndex({ file });
-  if (interactive) {
+  if (mode === "visual") {
+    if (args.length) throw new Error(usage);
+    const assets = join(dirname(fileURLToPath(import.meta.url)), "visual");
+    const visual = await startVisualServer(file, assets);
+    console.log(`Visual interface: ${visual.url}`);
+    const command =
+      process.platform === "darwin"
+        ? "open"
+        : process.platform === "win32"
+          ? "rundll32"
+          : "xdg-open";
+    const commandArgs =
+      process.platform === "win32"
+        ? ["url.dll,FileProtocolHandler", visual.url]
+        : [visual.url];
+    const opener = spawn(command, commandArgs, { stdio: "ignore" });
+    opener.on("error", (error) =>
+      console.error(`Unable to open browser: ${error.message}`),
+    );
+    opener.on("close", (code) => {
+      if (code !== 0 && code !== null)
+        console.error(
+          `Unable to open browser (exit ${code}); open the URL above.`,
+        );
+    });
+  } else if (mode === "electron") {
+    if (args.length) throw new Error(usage);
+    const executable: unknown = createRequire(import.meta.url)("electron");
+    if (typeof executable !== "string")
+      throw new Error("Electron executable is unavailable");
+    const main = join(dirname(fileURLToPath(import.meta.url)), "electron.js");
+    const child = spawn(
+      executable,
+      [main, ...(file === undefined ? [] : ["--file", file])],
+      { stdio: "inherit" },
+    );
+    child.on("error", (error) => {
+      console.error(`Unable to start Electron: ${error.message}`);
+      process.exitCode = 1;
+    });
+    child.on("close", (code, signal) => {
+      if (code !== 0) {
+        console.error(
+          `Electron exited ${signal ? `on signal ${signal}` : `with code ${code}`}`,
+        );
+        process.exitCode = 1;
+      }
+    });
+  } else if (mode === "interactive") {
     if (args.length) throw new Error(usage);
     const terminal = !!process.stdin.isTTY && !!process.stdout.isTTY;
     const session = createInterface({

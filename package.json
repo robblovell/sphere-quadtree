@@ -11,30 +11,39 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist/cli.js",
+    "dist/electron.js",
+    "dist/preload.cjs",
     "dist/index.d.ts",
     "dist/index.js",
+    "dist/visual",
     "README.md"
   ],
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json --emitDeclarationOnly --outDir dist/types && rollup dist/types/index.d.ts --plugin dts --format es --file dist/index.d.ts --silent && esbuild src/index.ts src/cli.ts --bundle --platform=node --target=node24 --format=esm --outdir=dist",
-    "format:check": "prettier --check 'src/**/*.ts' 'test/**/*.ts' package.json package-lock.json tsconfig.json '*.js' '*.ts' README.md",
+    "build": "tsc -p tsconfig.json --emitDeclarationOnly --outDir dist/types && rollup dist/types/index.d.ts --plugin dts --format es --file dist/index.d.ts --silent && esbuild src/index.ts src/cli.ts src/electron.ts --bundle --platform=node --target=node24 --format=esm --external:electron --outdir=dist && esbuild src/preload.ts --bundle --platform=node --target=node24 --format=cjs --external:electron --outfile=dist/preload.cjs && esbuild src/visual/renderer.ts --bundle --platform=browser --target=es2022 --format=esm --outfile=dist/visual/renderer.js && node scripts/copy-visual-assets.mjs",
+    "format:check": "prettier --check 'src/**/*.ts' 'test/**/*.ts' 'scripts/*.mjs' 'src/visual/*.html' 'src/visual/*.css' package.json package-lock.json tsconfig.json '*.js' '*.ts' README.md",
     "lint": "eslint src test",
     "test": "vitest run"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "electron": "45.3.3"
+  },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "^24.19.2",
+    "@types/three": "^0.187.0",
     "esbuild": "^0.28.2",
     "eslint": "10.15.0",
     "prettier": "^3.4.2",
+    "playwright-core": "^1.65.1",
     "rollup": "^4.24.0",
     "rollup-plugin-dts": "6.1.1",
+    "three": "^0.187.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "8.72.2",
     "vite": "^8.3.8",
@@ -42,6 +51,7 @@
   },
   "allowScripts": {
     "esbuild@0.28.2": true,
+    "electron@45.3.3": true,
     "fsevents@2.3.3": true
   },
   "overrides": {

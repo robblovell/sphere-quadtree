@@ -29,8 +29,7 @@ Searches can use three latitude/longitude pairs for a triangle, four pairs for a
 
 ```sh
 sqt find square 40 -130 40 -110 60 -110 60 -130
-sqt find box 40 -130 60 -110
-```
+ ```
 
 The box arguments are `south west north east`; a west longitude greater than east crosses the antimeridian. The optional `--file` precedes the command and defaults to `spherequadtree.json`.
 
@@ -45,6 +44,23 @@ sqt> quit
 ```
 
 Each interactive line uses the same command syntax as a one-shot invocation, without `sqt` or `--file`; arguments are separated by whitespace. Errors are reported without ending the session. `quit` or end-of-file exits. Prompts are shown only on a terminal.
+
+## Visual interface
+
+After building, start the shared 3D interface in your default browser or in an Electron window:
+
+```sh
+sqt --file places.json --visual
+sqt --file places.json --electron
+```
+
+`--file` is optional and defaults to `spherequadtree.json`. In both modes, add and delete operations immediately update the selected index. Drag the globe to rotate it, scroll to zoom, and click a leaf triangle to highlight it and list every point it contains, including points on shared boundaries. The find form also supports bounding boxes, triangles, and great-circle quadrilaterals; **Show all** clears the search. The view refreshes when the file is changed externally.
+
+Electron provides **Open index** and **Save as** dialogs. Opening switches to an existing index; saving creates or replaces the selected file and switches subsequent operations to that file. Browser mode uses the file selected at startup. The browser server listens only on `127.0.0.1`, uses a per-session token, and prints its URL if the browser does not open automatically. Stop it with Ctrl+C; closing the Electron window stops its server.
+
+The existing single-writer restriction still applies: do not modify an index concurrently from multiple processes. The browser and Electron modes require a graphical desktop with WebGL support.
+
+The globe includes a toggleable coastline overlay from the [Natural Earth 1:110m coastline dataset](https://github.com/nvkelso/natural-earth-vector/blob/ca96624a56bd078437bca8184e78163e5039ad19/geojson/ne_110m_coastline.geojson). The data is bundled for offline use and is [public domain](https://www.naturalearthdata.com/about/terms-of-use/). Made with Natural Earth. These are coastlines, including islands, not political borders or the inland boundaries between continents.
 
 ## API
 

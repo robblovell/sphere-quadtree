@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sphere Quadtree</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/renderer.js"></script>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Sphere Quadtree</h1>
+        <p id="file">Loading index...</p>
+      </div>
+      <div id="desktop-actions" hidden>
+        <button id="open" type="button">Open index</button>
+        <button id="save" type="button">Save as</button>
+      </div>
+    </header>
+    <main>
+      <section class="globe-panel" aria-label="Interactive sphere">
+        <div id="globe"></div>
+        <p class="hint">
+          Drag to rotate, scroll to zoom, and click a triangle to find its
+          points.
+        </p>
+      </section>
+      <aside>
+        <p id="status" role="status" aria-live="polite"></p>
+        <section>
+          <label class="overlay-toggle">
+            <input id="coastline-toggle" type="checkbox" checked disabled />
+            Show continent coastlines
+          </label>
+          <p class="help">Coastlines: Natural Earth (public domain).</p>
+        </section>
+        <section>
+          <h2>Add point</h2>
+          <form id="add-form">
+            <label>ID <input id="point-id" required /></label>
+            <div class="row">
+              <label
+                >Latitude
+                <input
+                  id="latitude"
+                  type="number"
+                  step="any"
+                  min="-90"
+                  max="90"
+                  required
+              /></label>
+              <label
+                >Longitude
+                <input
+                  id="longitude"
+                  type="number"
+                  step="any"
+                  min="-180"
+                  max="180"
+                  required
+              /></label>
+            </div>
+            <button type="submit">Add point</button>
+          </form>
+        </section>
+        <section>
+          <h2>Find points</h2>
+          <form id="find-form">
+            <label
+              >Region
+              <select id="search-kind">
+                <option value="box">Bounding box</option>
+                <option value="triangle">Triangle</option>
+                <option value="square">Great-circle quadrilateral</option>
+              </select>
+            </label>
+            <label
+              >Coordinates
+              <input id="coordinates" value="-90 -180 90 180" required
+            /></label>
+            <p id="search-help" class="help">south west north east</p>
+            <div class="row">
+              <button type="submit">Find</button>
+              <button id="clear" type="button">Show all</button>
+            </div>
+          </form>
+        </section>
+        <section>
+          <h2 id="results-title">Points</h2>
+          <p id="selection" class="help">No triangle selected.</p>
+          <ul id="results" aria-label="Search results"></ul>
+        </section>
+      </aside>
+    </main>
+  </body>
+</html>
