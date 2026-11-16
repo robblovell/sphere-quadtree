@@ -161,6 +161,61 @@ describe("flat-file CLI", () => {
     });
   });
 
+  it("generates fake data in batches while retaining existing records", () => {
+    const fakeFile = join(directory, "fake.json");
+    const invoke = (...args: string[]): string =>
+      execFileSync(process.execPath, [cli, "--file", fakeFile, ...args], {
+        encoding: "utf8",
+      }).trim();
+    invoke("add", "original", "0", "0");
+    expect(JSON.parse(invoke("--fake-data", "150"))).toEqual({ added: 150 });
+    expect(JSON.parse(invoke("--fake-data", "25"))).toEqual({ added: 25 });
+    const points: Array<{ id: string; lat: number; lon: number }> = JSON.parse(
+      invoke("find", "box", "-90", "-180", "90", "180"),
+    );
+    expect(points).toHaveLength(176);
+    expect(points.find((point) => point.id === "original")).toBeDefined();
+    expect(new Set(points.map((point) => point.id)).size).toBe(176);
+    expect(points.filter((point) => point.id.startsWith("fake-"))).toHaveLength(
+      175,
+    );
+    const before = readFileSync(fakeFile, "utf8");
+    expect(JSON.parse(invoke("--fake-data", "0"))).toEqual({ added: 0 });
+    expect(readFileSync(fakeFile, "utf8")).toBe(before);
+    expect(
+      JSON.parse(
+        execFileSync(
+          process.execPath,
+          [cli, "--fake-data", "1", "--file", fakeFile],
+          { encoding: "utf8" },
+        ),
+      ),
+    ).toEqual({ added: 1 });
+  });
+
+  it("rejects malformed fake-data requests without changing the index", () => {
+    const fakeFile = join(directory, "fake.json");
+    const before = readFileSync(fakeFile, "utf8");
+    for (const args of [
+      ["--fake-data"],
+      ["--fake-data", "-1"],
+      ["--fake-data", "1.5"],
+      ["--fake-data", "1e2"],
+      ["--fake-data", "9007199254740992"],
+      ["--fake-data", "1", "extra"],
+      ["--fake-data", "1", "--interactive"],
+    ]) {
+      const result = spawnSync(
+        process.execPath,
+        [cli, "--file", fakeFile, ...args],
+        { encoding: "utf8" },
+      );
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toMatch(/Point count|Usage/);
+      expect(readFileSync(fakeFile, "utf8")).toBe(before);
+    }
+  });
+
   it("reports errors without overwriting the file", () => {
     const before = readFileSync(file, "utf8");
     const invalid = spawnSync(

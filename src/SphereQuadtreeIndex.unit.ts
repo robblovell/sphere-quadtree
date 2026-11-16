@@ -52,4 +52,35 @@ describe("SphereQuadtreeIndex", () => {
         }),
     ).toThrow();
   });
+
+  it("loads once and saves once for a batch, and does not save failed or empty batches", () => {
+    let saved = new SphereQuadtree();
+    const store = {
+      load: vi.fn(() => SphereQuadtree.fromJSON(saved.toJSON())),
+      save: vi.fn((tree: SphereQuadtree) => {
+        saved = tree;
+      }),
+    };
+    const index = new SphereQuadtreeIndex({ store });
+    index.addMany([new Point("a", 0, 0), new Point("b", 10, 10)]);
+    expect(store.load).toHaveBeenCalledTimes(1);
+    expect(store.save).toHaveBeenCalledTimes(1);
+    expect(
+      index
+        .find(new BoundingBox(-90, -180, 90, 180))
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(["a", "b"]);
+    expect(() =>
+      index.addMany([new Point("c", 1, 1), new Point("a", 2, 2)]),
+    ).toThrow(/already exists/);
+    index.addMany([]);
+    expect(store.save).toHaveBeenCalledTimes(1);
+    expect(
+      index
+        .find(new BoundingBox(-90, -180, 90, 180))
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(["a", "b"]);
+  });
 });

@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { BoundingBox } from "./BoundingBox";
+import { generateFakePoints } from "./generateFakePoints";
 import { Point } from "./Point";
 import { SphereQuadtreeIndex } from "./SphereQuadtreeIndex";
 import { Square } from "./Square";
@@ -14,6 +15,7 @@ import { startVisualServer } from "./visual/startVisualServer";
 
 const usage = `Usage: sqt [--file path] [--interactive]
        sqt [--file path] --visual | --electron
+       sqt [--file path] --fake-data <count>
        sqt [--file path] add <id> <lat> <lon>
        sqt [--file path] delete <id>
        sqt [--file path] find <lat1> <lon1> <lat2> <lon2> <lat3> <lon3>
@@ -80,9 +82,16 @@ const execute = (tree: SphereQuadtreeIndex, args: string[]): void => {
 try {
   const args = process.argv.slice(2);
   let file: string | undefined;
-  let mode: "interactive" | "visual" | "electron" | undefined;
+  let mode: "interactive" | "visual" | "electron" | "fake-data" | undefined;
+  let fakeCount: number | undefined;
   while (
-    ["--file", "--interactive", "--visual", "--electron"].includes(args[0])
+    [
+      "--file",
+      "--interactive",
+      "--visual",
+      "--electron",
+      "--fake-data",
+    ].includes(args[0])
   ) {
     const option = args.shift();
     if (option === "--file") {
@@ -91,16 +100,33 @@ try {
       file = args.shift();
     } else {
       if (mode) throw new Error(usage);
-      mode =
-        option === "--interactive"
-          ? "interactive"
-          : option === "--visual"
-            ? "visual"
-            : "electron";
+      if (option === "--fake-data") {
+        const value = args.shift();
+        if (
+          !value ||
+          !/^\d+$/.test(value) ||
+          !Number.isSafeInteger(Number(value))
+        ) {
+          throw new Error("Point count must be a non-negative safe integer");
+        }
+        fakeCount = Number(value);
+        mode = "fake-data";
+      } else {
+        mode =
+          option === "--interactive"
+            ? "interactive"
+            : option === "--visual"
+              ? "visual"
+              : "electron";
+      }
     }
   }
   const tree = new SphereQuadtreeIndex({ file });
-  if (mode === "visual") {
+  if (mode === "fake-data") {
+    if (args.length || fakeCount === undefined) throw new Error(usage);
+    tree.addMany(generateFakePoints(fakeCount));
+    console.log(JSON.stringify({ added: fakeCount }));
+  } else if (mode === "visual") {
     if (args.length) throw new Error(usage);
     const assets = join(dirname(fileURLToPath(import.meta.url)), "visual");
     const visual = await startVisualServer(file, assets);

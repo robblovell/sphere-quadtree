@@ -25,6 +25,13 @@ sqt find 0 -180 0 -90 90 0
 sqt delete home
 ```
 
+For test data, `sqt --fake-data 100000` adds 100,000 randomly distributed
+points to the default index. Use `sqt --file places.json --fake-data 100000` to
+choose another index. The count must be a non-negative safe integer. Points are
+uniformly distributed over the sphere (including oceans), use unique `fake-`
+IDs, and are appended without removing existing records. The index is loaded
+and saved once for the whole batch; a count of zero does not write the file.
+
 Searches can use three latitude/longitude pairs for a triangle, four pairs for a great-circle quadrilateral, or latitude/longitude bounds:
 
 ```sh
